@@ -926,9 +926,11 @@ function _pumpGeo(){
   if(_geoBusy || !_geoQueue.length) return;
   _geoBusy=true;
   const job=_geoQueue.shift();
-  const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=ca&q='+encodeURIComponent(job.addr);
-  fetch(url,{headers:{'Accept':'application/json'}})
+  const q=encodeURIComponent(job.addr + (/canada/i.test(job.addr)?'':' Canada'));
+  const u=ex=>'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1'+ex+'&q='+q;
+  fetch(u('&countrycodes=ca'),{headers:{'Accept':'application/json'}})
     .then(r=>r.json())
+    .then(arr=>{ if(arr&&arr[0]) return arr; return fetch(u('')).then(r=>r.json()); })  // repli sans filtre pays
     .then(arr=>{ const h=arr&&arr[0]; job.done(h?{lat:parseFloat(h.lat),lng:parseFloat(h.lon)}:false); })
     .catch(()=>job.done(false))
     .finally(()=>{ setTimeout(()=>{ _geoBusy=false; _pumpGeo(); }, 1100); }); // respecte la limite ~1 req/s
@@ -1058,6 +1060,7 @@ function buildMap(){
 }
 
 function activityAnchor(a){
+  if(a.lat!=null && a.lng!=null) return {lat:a.lat,lng:a.lng};       // coords enregistrées sur l'activité
   if(a.address){ const g=state.geo[geoKey(a.address)]; if(g && g.lat!=null) return {lat:g.lat,lng:g.lng}; }
   if(!a.day) return null;
   if(a.day===4)  return {lat:PS[0].lat,lng:PS[0].lng};
@@ -1615,7 +1618,7 @@ function openPropose(){
   setThumb($('#pCat').value, '');
   $('#pSubmit').addEventListener('click',submitPropose);
 }
-function submitPropose(){
+async function submitPropose(){
   const url=$('#pUrl').value.trim();
   const name=$('#pName')?$('#pName').value.trim():'';
   const address=($('#pAddress')&&$('#pAddress').value.trim())||'';
@@ -1639,6 +1642,13 @@ function submitPropose(){
     proposedBy: by,
     address
   };
+  // localiser l'adresse tout de suite pour la placer sur la carte
+  const btn=$('#pSubmit'); if(btn){ btn.disabled=true; }
+  $('#pStatus').textContent='📍 Localisation de l\'adresse…';
+  try{
+    const g=await geocode(address);
+    if(g){ a.lat=g.lat; a.lng=g.lng; state.geo[geoKey(address)]=g; }
+  }catch(e){}
   state.proposed.push(a); ensureVotes(a.id);
   if(by) state.votes[a.id].love.push(by);
   persistState();
@@ -1708,7 +1718,7 @@ function openEdit(id){
     deleteActivity(id);
   }); }
 }
-function saveEdit(id){
+async function saveEdit(id){
   const base=getAct(id);
   const isProp=id.indexOf('prop_')===0;
   const e={
@@ -1723,6 +1733,12 @@ function saveEdit(id){
     desc:$('#eDesc').value.trim(),
     address:($('#eAddress')&&$('#eAddress').value.trim())||''
   };
+  // si l'adresse a changé, on relocalise
+  const addrChanged = (base.address||'') !== e.address;
+  if(addrChanged && e.address){
+    const st=$('#eStatus'); if(st) st.textContent='📍 Localisation de l\'adresse…';
+    try{ const g=await geocode(e.address); if(g){ e.lat=g.lat; e.lng=g.lng; state.geo[geoKey(e.address)]=g; } else { e.lat=null; e.lng=null; } }catch(_){}
+  } else if(addrChanged && !e.address){ e.lat=null; e.lng=null; }
   if(isProp){
     if($('#eDay')) e.day=$('#eDay').value?parseInt($('#eDay').value,10):null;
     const p=state.proposed.find(x=>x.id===id); if(p) Object.assign(p,e);

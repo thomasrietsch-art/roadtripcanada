@@ -133,7 +133,7 @@ svg.map.hide-nuits .mk-lodge{display:none}
 .stage-dot-l{display:block;width:13px;height:13px;border-radius:50%;background:var(--orange);border:2.5px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.3)}
 .stage-lbl-l{position:absolute;left:18px;top:-2px;white-space:nowrap;font:700 12px 'Plus Jakarta Sans';color:var(--ink);paint-order:stroke;-webkit-text-stroke:3px var(--surface);text-shadow:0 0 2px var(--surface)}
 .city-dot-l{display:block;width:7px;height:7px;border-radius:50%;background:var(--ink-faint)}
-.city-lbl-l{position:absolute;left:11px;top:-4px;white-space:nowrap;font:700 11px 'Plus Jakarta Sans';color:var(--ink-soft);-webkit-text-stroke:3px var(--surface)}
+.city-lbl-l{position:absolute;left:11px;top:-4px;white-space:nowrap;font:700 11px 'Plus Jakarta Sans';color:var(--ink-soft);paint-order:stroke;-webkit-text-stroke:3px var(--surface);text-shadow:0 0 2px var(--surface)}
 .seg-pill-l{display:inline-block;white-space:nowrap;background:var(--surface);border:1.2px solid var(--orange);color:var(--ink);border-radius:9px;padding:2px 7px;font:700 11px 'Plus Jakarta Sans';box-shadow:var(--shadow-sm)}
 #mapLayer{transform-box:view-box;transform-origin:0 0;transition:transform .85s cubic-bezier(.22,.61,.36,1)}
 .route-casing{fill:none;stroke:#fff;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.95}
@@ -903,7 +903,7 @@ async function persistState(){
   }catch(e){}
 }
 function renderAll(){
-  try{ renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderActivityMarkers(); }catch(e){}
+  try{ renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderBudget(); renderActivityMarkers(); }catch(e){}
 }
 function startCloudSync(){
   if(!hasCloud) return;
@@ -1700,7 +1700,7 @@ async function submitPropose(){
   if(by) state.votes[a.id].love.push(by);
   persistState();
   closeModal();
-  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail();
+  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderBudget();
   // aller SUR LA CARTE et centrer sur la nouvelle activité pour qu'elle soit visible
   switchView('trip');
   renderActivityMarkers();
@@ -1795,7 +1795,7 @@ async function saveEdit(id){
     state.edits[id]=Object.assign({}, state.edits[id], e);
   }
   persistState();
-  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail();
+  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderBudget();
   renderActivityMarkers();
   openModal(id);
 }
@@ -1804,7 +1804,7 @@ function deleteActivity(id){
   if(state.hidden.indexOf(id)===-1) state.hidden.push(id);   // masquage définitif (résiste à la synchro et se partage)
   delete state.votes[id]; delete state.edits[id];
   persistState(); closeModal();
-  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderActivityMarkers();
+  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderBudget(); renderActivityMarkers();
 }
 function closeModal(){ $('#modalBg').classList.remove('open'); }
 function openLodging(li){

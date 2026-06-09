@@ -840,11 +840,16 @@ async function sSet(key,val){
 async function loadState(){
   try{
     const u=await sGet('currentUser'); if(u) state.currentUser=JSON.parse(u);
-    const v=await sGet('votes3'); if(v){ const g=JSON.parse(v); Object.keys(g).forEach(k=>{ if(g[k]&&g[k].love) state.votes[k]=g[k]; }); }
-    const p=await sGet('proposed'); if(p) state.proposed=JSON.parse(p)||[];
+    const v=await sGet('votes3'); if(v){ const g=JSON.parse(v)||{}; state.votes=g; }
+    // hidden = union local + cloud (une suppression n'est jamais perdue ni « ressuscitée »)
+    const hd=await sGet('hidden'); if(hd){ const c=JSON.parse(hd)||[]; state.hidden=Array.from(new Set(state.hidden.concat(c))); }
+    // proposed = fusion par id (cloud prioritaire pour les modifs), moins les masquées
+    const p=await sGet('proposed'); if(p){ const c=JSON.parse(p)||[]; const byId={};
+      c.forEach(a=>{ byId[a.id]=a; }); state.proposed.forEach(a=>{ if(!byId[a.id]) byId[a.id]=a; });
+      state.proposed=Object.values(byId).filter(a=>state.hidden.indexOf(a.id)===-1);
+    }
     const ed=await sGet('edits'); if(ed) state.edits=JSON.parse(ed)||{};
-    const hd=await sGet('hidden'); if(hd) state.hidden=JSON.parse(hd)||[];
-    const gj=await sGet('geo'); if(gj) state.geo=JSON.parse(gj)||{};
+    const gj=await sGet('geo'); if(gj){ const c=JSON.parse(gj)||{}; state.geo=Object.assign({}, c, state.geo); }
   }catch(e){}
 }
 async function persistState(){
@@ -1742,7 +1747,7 @@ function saveEdit(id){
 }
 function deleteActivity(id){
   if(id.indexOf('prop_')===0){ state.proposed=state.proposed.filter(a=>a.id!==id); }
-  else if(state.hidden.indexOf(id)===-1){ state.hidden.push(id); }
+  if(state.hidden.indexOf(id)===-1) state.hidden.push(id);   // masquage définitif (résiste à la synchro et se partage)
   delete state.votes[id]; delete state.edits[id];
   persistState(); closeModal();
   renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderActivityMarkers();

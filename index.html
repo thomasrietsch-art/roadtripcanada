@@ -135,6 +135,26 @@ svg.map.hide-nuits .mk-lodge{display:none}
 .city-dot-l{display:block;width:7px;height:7px;border-radius:50%;background:var(--ink-faint)}
 .city-lbl-l{position:absolute;left:11px;top:-4px;white-space:nowrap;font:700 11px 'Plus Jakarta Sans';color:var(--ink-soft);paint-order:stroke;-webkit-text-stroke:3px var(--surface);text-shadow:0 0 2px var(--surface)}
 .seg-pill-l{display:inline-block;white-space:nowrap;background:var(--surface);border:1.2px solid var(--orange);color:var(--ink);border-radius:9px;padding:2px 7px;font:700 11px 'Plus Jakarta Sans';box-shadow:var(--shadow-sm)}
+/* Tableau « activités par lieu de séjour » */
+.lodge-board-wrap{margin-top:22px}
+.lb-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.lb-head h3{font-family:'Fraunces';font-size:22px}
+.lb-head span{font-size:12px;color:var(--ink-faint);font-weight:600}
+.lb-sub{color:var(--ink-soft);font-size:13.5px;margin:4px 0 14px;max-width:760px}
+.lodge-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.lb-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column}
+.lb-card .lc-top{display:flex;gap:10px;align-items:flex-start;margin-bottom:6px}
+.lb-card .lc-ic{width:38px;height:38px;border-radius:10px;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:18px;flex:none}
+.lb-card .lc-name{font-weight:700;font-size:14.5px;line-height:1.2}
+.lb-card .lc-meta{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+.lb-count{font-size:11px;font-weight:800;color:#fff;background:var(--forest-500);border-radius:20px;min-width:22px;height:22px;display:grid;place-items:center;padding:0 6px;flex:none}
+.lb-act{display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line);cursor:pointer}
+.lb-act:hover{opacity:.78}
+.lb-act .a-ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:13px;border:2px solid var(--c);background:var(--surface);flex:none}
+.lb-act .a-nm{font-size:13px;font-weight:600;flex:1;min-width:0;line-height:1.18}
+.lb-act .a-nm small{display:block;font-weight:600;color:var(--ink-faint);font-size:10.5px}
+.lb-act .a-love{font-size:11px;color:var(--ink-faint);font-weight:700;flex:none}
+.lb-empty{font-size:12.5px;color:var(--ink-faint);padding:8px 0 2px}
 #mapLayer{transform-box:view-box;transform-origin:0 0;transition:transform .85s cubic-bezier(.22,.61,.36,1)}
 .route-casing{fill:none;stroke:#fff;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke;opacity:.95}
 [data-theme="dark"] .route-casing{stroke:#06121c;opacity:.85}
@@ -521,6 +541,12 @@ footer .leafmini{color:var(--forest-500);font-weight:700}
         </div>
         <div class="day-detail" id="dayDetail"></div>
       </div>
+    </div>
+
+    <div class="lodge-board-wrap">
+      <div class="lb-head"><h3>Activités par lieu de séjour</h3><span>5 hébergements</span></div>
+      <p class="lb-sub">Toutes les activités proposées, regroupées autour de chaque endroit où l'on dort — pour visualiser quoi faire dans chaque coin, sans entrer dans le détail jour par jour.</p>
+      <div class="lodge-board" id="lodgingBoard"></div>
     </div>
   </div>
 </section>
@@ -1183,6 +1209,50 @@ function renderTimeline(){
   tl.querySelectorAll('.tl-day').forEach(el=>el.addEventListener('click', ()=>selectDay(+el.dataset.j)));
 }
 
+function lodgeForActivity(a){
+  // 1) par coordonnées : hébergement le plus proche
+  const an=activityAnchor(a);
+  if(an){
+    let best=-1, bd=Infinity;
+    LODGINGS.forEach((L,li)=>{ const p=P[L.stage]; if(!p) return; const dx=p.lat-an.lat, dy=p.lng-an.lng; const d=dx*dx+dy*dy; if(d<bd){ bd=d; best=li; } });
+    if(best>=0) return best;
+  }
+  // 2) par jour -> hébergement
+  if(a.day!=null && DAY_LODGE[a.day]!=null) return DAY_LODGE[a.day];
+  return -1; // à situer
+}
+function renderLodgingBoard(){
+  const host=$('#lodgingBoard'); if(!host) return;
+  const acts=allActs();
+  const buckets=LODGINGS.map(()=>[]);
+  const unplaced=[];
+  acts.forEach(a=>{ const li=lodgeForActivity(a); if(li>=0) buckets[li].push(a); else unplaced.push(a); });
+  const actRow=a=>{ const cat=CATS[a.cat]?a.cat:'Insolite'; const c=voteCounts(a); return `
+    <div class="lb-act" data-act="${a.id}">
+      <span class="a-ic" style="--c:${CATS[cat].color}">${a.glyph}</span>
+      <span class="a-nm">${a.name}<small>${priceTxt(a.budget)}${a.dur&&a.dur!=='—'?' · '+a.dur:''}</small></span>
+      <span class="a-love">🤩 ${c.love}</span>
+    </div>`; };
+  const cardFor=(L,list)=>`<div class="lb-card">
+      <div class="lc-top">
+        <div class="lc-ic">🏠</div>
+        <div style="flex:1;min-width:0"><div class="lc-name">${L.loc}</div><div class="lc-meta">${L.from.replace(/^[a-zé.]+ /,'')} → ${L.to.replace(/^[a-zé.]+ /,'')} · ${L.nights} nuit${L.nights>1?'s':''}</div></div>
+        <span class="lb-count">${list.length}</span>
+      </div>
+      ${list.length ? list.map(actRow).join('') : '<div class="lb-empty">Aucune activité proposée pour ce coin.</div>'}
+    </div>`;
+  let html=LODGINGS.map((L,li)=>cardFor(L,buckets[li])).join('');
+  if(unplaced.length){
+    html+=`<div class="lb-card">
+      <div class="lc-top"><div class="lc-ic" style="background:var(--ink-faint)">📍</div>
+        <div style="flex:1;min-width:0"><div class="lc-name">À situer</div><div class="lc-meta">sans adresse localisée ni jour</div></div>
+        <span class="lb-count">${unplaced.length}</span></div>
+      ${unplaced.map(actRow).join('')}
+    </div>`;
+  }
+  host.innerHTML=html;
+  host.querySelectorAll('.lb-act').forEach(el=>el.addEventListener('click',()=>openModal(el.dataset.act)));
+}
 function renderDayDetail(){
   const d = DAYS.find(x=>x.j===state.selectedDay);
   const acts = actsForDay(d);
@@ -1200,17 +1270,13 @@ function renderDayDetail(){
   $('#dayDetail').innerHTML = `
     <div class="dd-hero">
       <div class="jbig">JOUR ${d.j} · ${d.date} 2026</div>
-      <h3>${d.title}</h3>
+      <h3>Activité à définir pour ce jour</h3>
       <div class="loc">📍 ${d.region}</div>
     </div>
     <div class="dd-body">
       <div class="dd-block acts">
         <div class="lbl">🎯 Activités du jour</div>
         <div style="display:flex;flex-direction:column;gap:9px">${actHtml}</div>
-      </div>
-      <div class="dd-block">
-        <div class="lbl">🛣️ Sur la route</div>
-        ${travelHtml}
       </div>
       <div class="dd-block">
         <div class="lbl">🏡 Hébergement</div>
@@ -1220,6 +1286,7 @@ function renderDayDetail(){
   $('#dayDetail').querySelectorAll('.mini-act').forEach(el=>el.addEventListener('click',()=>openModal(el.dataset.act)));
   const lc=$('#dayDetail').querySelector('.lodge-card');
   if(lc) lc.addEventListener('click',()=>openLodging(+lc.dataset.lodge));
+  renderLodgingBoard();
 }
 function lodgeHtml(d){
   const li = DAY_LODGE[d.j];

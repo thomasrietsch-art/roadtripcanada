@@ -855,16 +855,27 @@ async function sSet(key,val){
   if(hasStorage){ try{ await window.storage.set(key, val, true); }catch(e){} return; }
   lsSet(key,val);
 }
+function mergeProposedById(localArr, cloudArr){
+  const byId={};
+  (cloudArr||[]).forEach(a=>{ if(a&&a.id) byId[a.id]=a; });
+  (localArr||[]).forEach(a=>{
+    if(!a||!a.id) return;
+    const c=byId[a.id];
+    if(!c){ byId[a.id]=a; return; }
+    const lt=a.updatedAt||0, ct=c.updatedAt||0;
+    byId[a.id] = (lt>=ct) ? a : c;   // garde la version la plus récente
+  });
+  return Object.values(byId);
+}
 async function loadState(){
   try{
     const u=await sGet('currentUser'); if(u) state.currentUser=JSON.parse(u);
     const v=await sGet('votes3'); if(v){ const g=JSON.parse(v)||{}; state.votes=g; }
     // hidden = union local + cloud (une suppression n'est jamais perdue ni « ressuscitée »)
     const hd=await sGet('hidden'); if(hd){ const c=JSON.parse(hd)||[]; state.hidden=Array.from(new Set(state.hidden.concat(c))); }
-    // proposed = fusion par id (cloud prioritaire pour les modifs), moins les masquées
-    const p=await sGet('proposed'); if(p){ const c=JSON.parse(p)||[]; const byId={};
-      c.forEach(a=>{ byId[a.id]=a; }); state.proposed.forEach(a=>{ if(!byId[a.id]) byId[a.id]=a; });
-      state.proposed=Object.values(byId).filter(a=>state.hidden.indexOf(a.id)===-1);
+    // proposed = fusion par id, on garde la version la plus récente (horodatage) — moins les masquées
+    const p=await sGet('proposed'); if(p){ const c=JSON.parse(p)||[];
+      state.proposed = mergeProposedById(state.proposed, c).filter(a=>state.hidden.indexOf(a.id)===-1);
     }
     const ed=await sGet('edits'); if(ed) state.edits=JSON.parse(ed)||{};
     const gj=await sGet('geo'); if(gj){ const c=JSON.parse(gj)||{}; state.geo=Object.assign({}, c, state.geo); }
@@ -874,6 +885,12 @@ async function persistState(){
   try{
     await sSet('currentUser',JSON.stringify(state.currentUser));
     await sSet('votes3',JSON.stringify(state.votes));
+    // avant d'écrire les activités, on relit le cloud et on garde la version la plus récente
+    if(hasCloud){
+      try{ const cj=await sGet('proposed'); const cloud=cj?(JSON.parse(cj)||[]):[];
+        state.proposed = mergeProposedById(state.proposed, cloud).filter(a=>state.hidden.indexOf(a.id)===-1);
+      }catch(e){}
+    }
     await sSet('proposed',JSON.stringify(state.proposed));
     await sSet('edits',JSON.stringify(state.edits));
     await sSet('hidden',JSON.stringify(state.hidden));
@@ -1048,7 +1065,7 @@ function buildMap(){
   LLODGE=L.layerGroup().addTo(MAP);
   LODGINGS.forEach((Lo,li)=>{
     const p=P[Lo.stage]; if(!p) return;
-    const m=L.marker([p.lat,p.lng],{zIndexOffset:200,icon:L.divIcon({className:'mk',html:'<span class="lodge-pin-l">\u{1F3E0}<span class="lodge-badge-l">'+Lo.nights+'</span></span>',iconSize:[32,32],iconAnchor:[16,16]})}).addTo(LLODGE);
+    const m=L.marker([p.lat,p.lng],{zIndexOffset:200,icon:L.divIcon({className:'mk',html:'<span class="lodge-pin-l">\u{1F3E0}</span>',iconSize:[32,32],iconAnchor:[16,16]})}).addTo(LLODGE);
     m.on('click',()=>openLodging(li));
   });
 
@@ -1342,9 +1359,15 @@ function renderRanking(){
 }
 
 function renderBudget(){
-  const actPerPerson = ACT.reduce((s,a)=>s+a.budget,0); // si on faisait tout
-  // estimation réaliste : ~60% des activités payantes retenues
-  const actBudget = Math.round(actPerPerson*0.6);
+  // Activités : estimation si on retient 1 activité proposée sur 2
+  const proposedActs = allActs();
+  const nbProp   = proposedActs.length;
+  const actAllPP = proposedActs.reduce((s,a)=>s+(a.budget||0),0); // coût/pers si on faisait TOUTES les propositions
+  const actBudget= Math.round(actAllPP*0.5);                      // 1 activité sur 2
+  const nbRetenu = Math.round(nbProp/2);
+  const actSub = nbProp
+    ? `${nbProp} activité${nbProp>1?'s':''} proposée${nbProp>1?'s':''} · on en retient 1 sur 2 (~${nbRetenu}) · tout = ${actAllPP.toLocaleString('fr-FR')} $/pers`
+    : 'Aucune activité proposée pour l\'instant';
 
   // Essence calculée pour 8 personnes : 2 véhicules (4 pers./véhicule)
   const GAS_PEOPLE = 8, VEHICLES = 2, KM = 2150, CONSO = 10.5, PRIX = 1.55; // L/100km, $/L (CAD)
@@ -1353,7 +1376,7 @@ function renderBudget(){
 
   const cats = [
     {label:'Essence', sub:`~2 150 km · ${VEHICLES} véhicules · ${PRIX.toString().replace('.',',')} $/L · partagé à ${GAS_PEOPLE}`, perPerson:gasPP, total:gasTotal, ic:'⛽', color:'var(--orange)'},
-    {label:'Activités', sub:'sélection d\'activités payantes', perPerson:actBudget, ic:'🎯', color:'var(--forest-500)'},
+    {label:'Activités', sub:actSub, perPerson:actBudget, ic:'🎯', color:'var(--forest-500)'},
     BUDGET.nourriture
   ];
   const totalPP = cats.reduce((s,c)=>s+c.perPerson,0);
@@ -1640,7 +1663,8 @@ async function submitPropose(){
     desc:$('#pDesc').value.trim()||('Proposition ajoutée par '+(personById(by)?personById(by).name:'un membre du groupe')+'.'),
     url,
     proposedBy: by,
-    address
+    address,
+    updatedAt: Date.now()
   };
   // localiser l'adresse tout de suite pour la placer sur la carte
   const btn=$('#pSubmit'); if(btn){ btn.disabled=true; }
@@ -1731,7 +1755,8 @@ async function saveEdit(id){
     url:$('#eUrl').value.trim(),
     img:$('#eImg').value.trim(),
     desc:$('#eDesc').value.trim(),
-    address:($('#eAddress')&&$('#eAddress').value.trim())||''
+    address:($('#eAddress')&&$('#eAddress').value.trim())||'',
+    updatedAt: Date.now()
   };
   // si l'adresse a changé, on relocalise
   const addrChanged = (base.address||'') !== e.address;

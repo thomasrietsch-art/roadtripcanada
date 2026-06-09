@@ -1882,8 +1882,9 @@ document.querySelectorAll('#propSeg button').forEach(b=>b.addEventListener('clic
   renderTop();
   await loadState();
   updateProfileBtn();
-  renderStats(); renderActivities(); renderRanking(); renderTop();
+  renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail(); renderActivityMarkers();
   selectDay(2);
+  renderActivityMarkers();
   document.querySelectorAll('[data-sort]').forEach(b=>b.addEventListener('click',()=>{
     state.topSort=b.dataset.sort;
     document.querySelectorAll('[data-sort]').forEach(x=>x.classList.toggle('on',x===b));

@@ -1595,10 +1595,11 @@ function openPropose(){
     <button class="modal-x" id="mClose">✕</button>
     <h2 style="margin-bottom:4px">Proposer une activité</h2>
     <p class="mdesc" style="margin-bottom:14px">Donne un <b>nom</b> et une <b>adresse</b> à l'activité (obligatoires). Le lien est optionnel, et la photo s'importe depuis ton appareil.</p>
+    <div class="f-row"><label>Nom de l'activité (obligatoire)</label><input id="pName" type="text" placeholder="Ex. Kayak sur le fjord du Saguenay" required></div>
     <div class="f-row"><label>Lien de l'activité (optionnel)</label><input id="pUrl" type="url" placeholder="Colle le lien ici…" autocomplete="off"><div class="url-status" id="pStatus"></div></div>
     <div id="pPreview" class="prop-preview">
       <div class="pp-thumb" id="ppThumb"></div>
-      <div style="flex:1;min-width:0"><label style="margin-bottom:4px">Nom (obligatoire)</label><input id="pName" type="text" placeholder="Nom de l'activité" required></div>
+      <div style="flex:1;min-width:0"><label style="margin-bottom:4px">Aperçu</label><div class="url-status" style="margin-top:0">Icône de la catégorie, ou photo importée ci-dessous.</div></div>
     </div>
     <div class="f-row"><label>Photo (optionnel)</label>
       <input type="hidden" id="pImg">

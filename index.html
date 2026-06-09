@@ -948,13 +948,16 @@ function _pumpGeo(){
   if(_geoBusy || !_geoQueue.length) return;
   _geoBusy=true;
   const job=_geoQueue.shift();
-  const q=encodeURIComponent(job.addr + (/canada/i.test(job.addr)?'':' Canada'));
-  const u=ex=>'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1'+ex+'&q='+q;
-  fetch(u('&countrycodes=ca'),{headers:{'Accept':'application/json'}})
-    .then(r=>r.json())
-    .then(arr=>{ if(arr&&arr[0]) return arr; return fetch(u('')).then(r=>r.json()); })  // repli sans filtre pays
-    .then(arr=>{ const h=arr&&arr[0]; job.done(h?{lat:parseFloat(h.lat),lng:parseFloat(h.lon)}:false); })
-    .catch(()=>job.done(false))
+  const raw=job.addr + (/canada/i.test(job.addr)?'':' Canada');
+  const q=encodeURIComponent(raw);
+  const nomin=ex=>fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1'+ex+'&q='+q,{headers:{'Accept':'application/json'}})
+    .then(r=>r.json()).then(a=>(a&&a[0])?{lat:parseFloat(a[0].lat),lng:parseFloat(a[0].lon)}:null).catch(()=>null);
+  const photon=()=>fetch('https://photon.komoot.io/api/?limit=1&q='+q)
+    .then(r=>r.json()).then(j=>{ const f=j&&j.features&&j.features[0]; return (f&&f.geometry&&f.geometry.coordinates)?{lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]}:null; }).catch(()=>null);
+  nomin('&countrycodes=ca')
+    .then(r=>r||nomin(''))      // repli : sans filtre pays
+    .then(r=>r||photon())       // repli : autre service (Photon/komoot)
+    .then(r=>job.done(r||false))
     .finally(()=>{ setTimeout(()=>{ _geoBusy=false; _pumpGeo(); }, 1100); }); // respecte la limite ~1 req/s
 }
 function geocode(addr){ return new Promise(res=>{ _geoQueue.push({addr,done:res}); _pumpGeo(); }); }
@@ -1683,14 +1686,25 @@ async function submitPropose(){
     const g=await geocode(address);
     if(g){ a.lat=g.lat; a.lng=g.lng; state.geo[geoKey(address)]=g; }
   }catch(e){}
+
+  // où placer l'activité sur la carte ? (coords trouvées, sinon jour choisi)
+  const an = (a.lat!=null && a.lng!=null) ? {lat:a.lat,lng:a.lng} : activityAnchor(a);
+  if(!an){
+    // ni adresse localisable, ni jour : on ne l'ajoute pas en silence, on demande de préciser
+    if(btn) btn.disabled=false;
+    $('#pStatus').innerHTML='⚠️ Adresse introuvable sur la carte. Précise-la (ex. « Niagara Falls, Ontario, Canada ») <b>ou</b> choisis un jour, puis réessaie.';
+    return;
+  }
+
   state.proposed.push(a); ensureVotes(a.id);
   if(by) state.votes[a.id].love.push(by);
   persistState();
   closeModal();
-  state.proposeView='proposed';
-  switchView('activities');
   renderStats(); renderActivities(); renderRanking(); renderTop(); renderDayDetail();
+  // aller SUR LA CARTE et centrer sur la nouvelle activité pour qu'elle soit visible
+  switchView('trip');
   renderActivityMarkers();
+  if(MAP){ setTimeout(()=>{ MAP.flyTo([an.lat,an.lng], 11, {duration:.6}); }, 220); }
 }
 function openEdit(id){
   const a=getAct(id); if(!a)return;

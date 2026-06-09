@@ -863,7 +863,11 @@ function mergeProposedById(localArr, cloudArr){
     const c=byId[a.id];
     if(!c){ byId[a.id]=a; return; }
     const lt=a.updatedAt||0, ct=c.updatedAt||0;
-    byId[a.id] = (lt>=ct) ? a : c;   // garde la version la plus récente
+    const keep  = (lt>=ct) ? a : c;   // version la plus récente
+    const other = (lt>=ct) ? c : a;
+    // ne JAMAIS perdre des coordonnées déjà connues
+    if((keep.lat==null||keep.lng==null) && other.lat!=null && other.lng!=null){ keep.lat=other.lat; keep.lng=other.lng; }
+    byId[a.id]=keep;
   });
   return Object.values(byId);
 }
@@ -878,7 +882,7 @@ async function loadState(){
       state.proposed = mergeProposedById(state.proposed, c).filter(a=>state.hidden.indexOf(a.id)===-1);
     }
     const ed=await sGet('edits'); if(ed) state.edits=JSON.parse(ed)||{};
-    const gj=await sGet('geo'); if(gj){ const c=JSON.parse(gj)||{}; state.geo=Object.assign({}, c, state.geo); }
+    const gj=await sGet('geo'); if(gj){ const c=JSON.parse(gj)||{}; const m=Object.assign({}, c, state.geo); for(const kk in m){ if(!(m[kk] && m[kk].lat!=null)) delete m[kk]; } state.geo=m; }
   }catch(e){}
 }
 async function persistState(){
@@ -894,7 +898,8 @@ async function persistState(){
     await sSet('proposed',JSON.stringify(state.proposed));
     await sSet('edits',JSON.stringify(state.edits));
     await sSet('hidden',JSON.stringify(state.hidden));
-    await sSet('geo',JSON.stringify(state.geo));
+    const _geoOK={}; for(const kk in state.geo){ if(state.geo[kk] && state.geo[kk].lat!=null) _geoOK[kk]=state.geo[kk]; }
+    await sSet('geo',JSON.stringify(_geoOK));
   }catch(e){}
 }
 function renderAll(){
@@ -910,7 +915,7 @@ function startCloudSync(){
       if(before!==after) renderAll();
     }catch(e){}
   }, 15000);
-  document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ loadState().then(renderAll); } });
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ loadState().then(()=>{ renderAll(); if(MAP) MAP.invalidateSize(); }); } });
 }
 
 /* =========================================================
@@ -955,10 +960,15 @@ function _pumpGeo(){
 function geocode(addr){ return new Promise(res=>{ _geoQueue.push({addr,done:res}); _pumpGeo(); }); }
 function ensureGeo(addr){
   const k=geoKey(addr); if(!k) return;
-  if(state.geo[k]!==undefined) return;   // déjà connu (coords ou false)
+  const cur=state.geo[k];
+  if(cur && cur.lat!=null) return;        // déjà localisé avec succès
   if(_geoPending.has(k)) return;          // déjà en cours
   _geoPending.add(k);
-  geocode(addr).then(r=>{ state.geo[k]=r; _geoPending.delete(k); persistState(); renderActivityMarkers(); });
+  geocode(addr).then(r=>{
+    _geoPending.delete(k);
+    if(r && r.lat!=null){ state.geo[k]=r; persistState(); renderActivityMarkers(); }
+    // si échec : on NE stocke PAS « false » (sinon ça masquerait l'activité et bloquerait les nouveaux essais)
+  });
 }
 
 let mapScale = 1, mapTx = 0, mapTy = 0;
@@ -1825,6 +1835,7 @@ function switchView(v){
   document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active', s.id==='view-'+v));
   $('#tabs').classList.remove('mobile-open');
   window.scrollTo({top:0,behavior:'smooth'});
+  if(v==='trip' && MAP){ setTimeout(()=>{ MAP.invalidateSize(); renderActivityMarkers(); },120); }
 }
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>switchView(b.dataset.view)));
 $('#menuToggle').addEventListener('click',()=>$('#tabs').classList.toggle('mobile-open'));

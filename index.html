@@ -390,14 +390,44 @@ footer .leafmini{color:var(--forest-500);font-weight:700}
   .dd-block.acts{grid-column:1;grid-row:1 / span 2}
 }
 @media(max-width:720px){
+  .wrap{padding:0 16px}
   nav.tabs{display:none}
-  nav.tabs.mobile-open{display:flex;position:absolute;top:66px;left:0;right:0;flex-direction:column;background:var(--surface);border-bottom:1px solid var(--line);border-radius:0;margin:0;padding:10px;gap:6px;box-shadow:var(--shadow-lg)}
-  nav.tabs.mobile-open button{text-align:left;padding:12px}
+  nav.tabs.mobile-open{display:flex;position:absolute;top:66px;left:0;right:0;flex-direction:column;background:var(--surface);border-bottom:1px solid var(--line);border-radius:0;margin:0;padding:10px;gap:6px;box-shadow:var(--shadow-lg);z-index:60}
+  nav.tabs.mobile-open button{text-align:left;padding:13px 14px;font-size:15px}
   .menu-toggle{display:grid}
-  .stats{grid-template-columns:repeat(2,1fr)}
+  .top-inner{gap:10px}
+  .icon-btn{width:38px;height:38px;font-size:16px}
+  .brand{font-size:16px;gap:9px}
+  .brand small{display:none}
+  .stats{grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px}
+  .stat{padding:12px 13px}
+  .hero{padding:22px 0 4px}
+  .hero p.lede{font-size:15px}
+  .section-pad{padding:20px 0 52px}
+  .shead h2{font-size:22px}
+  .map-head{gap:7px;flex-wrap:wrap}
+  .map-chip{font-size:11.5px;padding:6px 9px;gap:5px}
+  .map-controls button{width:40px;height:40px}
+  .map-layers{padding:8px 9px;gap:6px}
+  .map-layers label{font-size:12px}
+  svg.map{height:clamp(340px,56vh,480px)}
   .podium{grid-template-columns:1fr;align-items:stretch}
   .pod.p1{transform:none}
-  .brand small{display:none}
+  .b-total{padding:20px}
+  .b-total .big{font-size:42px}
+  .b-total .perperson b{font-size:24px}
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{max-width:none;border-radius:var(--radius-lg) var(--radius-lg) 0 0;max-height:94vh}
+  .modal .mhero{height:140px}
+  .modal .mbody{padding:20px 18px 24px}
+  .modal .mfoot{flex-direction:column}
+}
+@media(max-width:430px){
+  #pdfBtn{display:none}                              /* allège l'en-tête */
+  .brand .leaf{width:28px;height:28px;font-size:15px}
+  .map-head .map-chip:nth-child(2){display:none}     /* masque "hébergements" pour aérer la carte */
+  .hero h1{font-size:26px}
+  svg.map{height:clamp(300px,50vh,420px)}
 }
 
 /* ===== PRINT ===== */
@@ -425,9 +455,7 @@ footer .leafmini{color:var(--forest-500);font-weight:700}
     <nav class="tabs" id="tabs">
       <button data-view="trip" class="active">🗺️ Carte &amp; Jours</button>
       <button data-view="activities">🎯 Activités</button>
-      <button data-view="ranking">❤️ Votes</button>
       <button data-view="budget">💰 Budget</button>
-      <button data-view="top">🏆 Top</button>
     </nav>
     <button class="profile-btn" id="profileBtn" title="Choisir mon profil"><span id="profileAv" class="avatar" style="width:24px;height:24px;background:var(--ink-faint);font-size:11px">?</span><span id="profileName">Qui es-tu ?</span></button>
     <button class="icon-btn menu-toggle" id="menuToggle" title="Menu">☰</button>
@@ -497,16 +525,6 @@ footer .leafmini{color:var(--forest-500);font-weight:700}
   </div>
 </section>
 
-<!-- ============ RANKING / VOTES VIEW ============ -->
-<section class="view" id="view-ranking">
-  <div class="wrap section-pad">
-    <div class="shead">
-      <div><h2>Classement des coups de cœur</h2><p>Le ❤️ exprime l'envie, « Je veux faire » engage le groupe. Mettez-vous d'accord !</p></div>
-    </div>
-    <div class="rank-list" id="rankList"></div>
-  </div>
-</section>
-
 <!-- ============ BUDGET VIEW ============ -->
 <section class="view" id="view-budget">
   <div class="wrap section-pad">
@@ -517,28 +535,11 @@ footer .leafmini{color:var(--forest-500);font-weight:700}
       <div class="b-total">
         <div class="k">Budget total estimé · groupe</div>
         <div class="big" id="budTotal">—</div>
-        <div class="sub">Tout compris · 16 jours · estimé pour 10 voyageurs</div>
+        <div class="sub">Hors hébergement (déjà réservé) · 16 jours · essence pour 8</div>
         <div class="perperson"><span>Par personne</span><b id="budPerPerson">—</b></div>
       </div>
       <div class="bk-list" id="budBreakdown"></div>
     </div>
-  </div>
-</section>
-
-<!-- ============ TOP / DECISION VIEW ============ -->
-<section class="view" id="view-top">
-  <div class="wrap section-pad">
-    <div class="shead">
-      <div><h2>Mode décision · Top du voyage</h2><p>Trier pour trancher : votes du groupe, effet WOW ou budget malin.</p></div>
-    </div>
-    <div class="sort-bar">
-      <span style="font-weight:700;font-size:13px;color:var(--ink-soft)">Classer par&nbsp;:</span>
-      <button class="chip on" data-sort="votes">👥 Votes du groupe</button>
-      <button class="chip" data-sort="wow">⭐ Effet WOW</button>
-      <button class="chip" data-sort="budget">💵 Budget (croissant)</button>
-    </div>
-    <div class="podium" id="podium"></div>
-    <div class="rank-list" id="topList"></div>
   </div>
 </section>
 
@@ -697,10 +698,10 @@ ACT.length = 0; // activités de base retirées (kayaks compris) — seules les 
 // Jours J1 → J16 (18 juil → 2 août 2026)
 const DAYS = [
   {j:1,  date:'18 juil', title:'Arrivée & route vers Charlevoix', region:'Montréal → Charlevoix', stage:1,
-   travel:[{from:'Aéroport de Montréal (YUL)',to:'Petite-Rivière-St-François',time:'~1 h 30',km:140}],
+   travel:[{from:'Aéroport de Montréal (YUL)',to:'Petite-Rivière-St-François',time:'~4 h',km:415}],
    lodging:'Chalet · Charlevoix, vue fleuve', acts:[]},
   {j:2,  date:'19 juil', title:'Le Massif de Charlevoix', region:'Charlevoix', stage:1,
-   travel:[{from:'Montréal',to:'Petite-Rivière-St-François',time:'1 h 30',km:140}],
+   travel:[{from:'Base (Charlevoix)',to:'Le Massif de Charlevoix',time:'~15 min',km:12}],
    lodging:'Chalet · Charlevoix, vue fleuve', acts:['massif_cabine','massif_rando','massif_vtt']},
   {j:3,  date:'20 juil', title:'Rivières & saveurs', region:'Charlevoix', stage:1,
    travel:[{from:'Base',to:'Sites canyoning / kayak',time:'30 min',km:25}],
@@ -709,13 +710,13 @@ const DAYS = [
    travel:[{from:'Charlevoix',to:'Tadoussac (+ traversier)',time:'~2 h',km:110}],
    lodging:'Chalet · Charlevoix', acts:['baleines','zodiac_fjord']},
   {j:5,  date:'22 juil', title:'Route & Parc Oméga', region:'Outaouais', stage:2,
-   travel:[{from:'Charlevoix',to:'Parc Oméga / Val-des-Monts',time:'~5 h',km:440}],
+   travel:[{from:'Charlevoix',to:'Parc Oméga / Val-des-Monts',time:'~6 h',km:560}],
    lodging:'Chalet au bord du lac · Val-des-Monts', acts:['parc_omega']},
   {j:6,  date:'23 juil', title:'Journée lac & feu de camp', region:'Outaouais', stage:2,
    travel:[{from:'Base',to:'Lac & plage',time:'10 min',km:5}],
    lodging:'Chalet au bord du lac · Val-des-Monts', acts:['kayak6','paddle6','baignade','feu_camp']},
   {j:7,  date:'24 juil', title:'Transition vers l\'Ontario', region:'En route', stage:3,
-   travel:[{from:'Val-des-Monts',to:'Kawartha Lakes',time:'~4 h',km:370}],
+   travel:[{from:'Val-des-Monts',to:'Kawartha Lakes',time:'~3 h 45',km:365}],
    lodging:'Chalet au bord de l\'eau · Kawartha Lakes', acts:[]},
   {j:8,  date:'25 juil', title:'Sports nautiques', region:'Kawartha Lakes', stage:3,
    travel:[{from:'Base',to:'Marina',time:'15 min',km:10}],
@@ -1003,7 +1004,7 @@ function buildMap(){
     ...LODGINGS.map(L=>({x:P[L.stage].x+HOFF.x, y:P[L.stage].y+HOFF.y})), // les 5 nuits (adresses)
     {x:P[6].x, y:P[6].y}                                               // retour Montréal
   ];
-  const driveTimes=['1 h 30','~5 h','~4 h','~2 h','~3 h','~3 h'];
+  const driveTimes=['~4 h','~6 h','~3 h 45','~2 h','~3 h','~3 h'];
   for(let i=0;i<nightStops.length-1 && i<driveTimes.length;i++){
     const A=nightStops[i], B=nightStops[i+1];
     const mx=(A.x+B.x)/2, my=(A.y+B.y)/2, t=driveTimes[i];
@@ -1336,6 +1337,7 @@ function voteBtnsFull(a){
 function bindVotes(scope){ scope.querySelectorAll('[data-vote]').forEach(b=>b.addEventListener('click',(e)=>{e.stopPropagation();setVote(b.dataset.id,b.dataset.vote);})); }
 
 function renderRanking(){
+  if(!$('#rankList')) return;
   const list = allActs().map(a=>({a, ...voteCounts(a)})).sort((x,y)=> (y.score-x.score) || (y.love-x.love));
   $('#rankList').innerHTML = list.map((it,i)=>{
     const a=it.a; const cat=CATS[a.cat]?a.cat:'Insolite';
@@ -1354,14 +1356,20 @@ function renderBudget(){
   const actPerPerson = ACT.reduce((s,a)=>s+a.budget,0); // si on faisait tout
   // estimation réaliste : ~60% des activités payantes retenues
   const actBudget = Math.round(actPerPerson*0.6);
+
+  // Essence calculée pour 8 personnes : 2 véhicules (4 pers./véhicule)
+  const GAS_PEOPLE = 8, VEHICLES = 2, KM = 2150, CONSO = 10.5, PRIX = 1.55; // L/100km, $/L (CAD)
+  const gasTotal = Math.round(VEHICLES * (KM/100) * CONSO * PRIX);   // ≈ 700 $ pour tout le groupe
+  const gasPP    = Math.round(gasTotal / GAS_PEOPLE);                // ≈ 88 $/pers
+
   const cats = [
-    BUDGET.hebergement,
-    BUDGET.essence,
+    {label:'Essence', sub:`~2 150 km · ${VEHICLES} véhicules · ${PRIX.toString().replace('.',',')} $/L · partagé à ${GAS_PEOPLE}`, perPerson:gasPP, total:gasTotal, ic:'⛽', color:'var(--orange)'},
     {label:'Activités', sub:'sélection d\'activités payantes', perPerson:actBudget, ic:'🎯', color:'var(--forest-500)'},
     BUDGET.nourriture
   ];
   const totalPP = cats.reduce((s,c)=>s+c.perPerson,0);
-  const total = totalPP*GROUP_SIZE;
+  // total groupe : l'essence est un montant fixe (déjà pour tout le groupe), le reste est par personne
+  const total = cats.reduce((s,c)=> s + (c.total!=null ? c.total : c.perPerson*GROUP_SIZE), 0);
   const max = Math.max(...cats.map(c=>c.perPerson));
   $('#budTotal').textContent = total.toLocaleString('fr-FR')+' $';
   $('#budPerPerson').textContent = totalPP.toLocaleString('fr-FR')+' $';
@@ -1377,6 +1385,7 @@ function renderBudget(){
 }
 
 function renderTop(){
+  if(!$('#podium')) return;
   let list = allActs().map(a=>({a, ...voteCounts(a)}));
   if(state.topSort==='votes') list.sort((x,y)=>(y.score-x.score)||(y.love-x.love)||(y.a.wow-x.a.wow));
   else if(state.topSort==='wow') list.sort((x,y)=>(y.a.wow-x.a.wow)||(y.score-x.score));
@@ -1560,19 +1569,17 @@ function openPropose(){
   $('#modal').innerHTML=`<div class="mbody" style="position:relative">
     <button class="modal-x" id="mClose">✕</button>
     <h2 style="margin-bottom:4px">Proposer une activité</h2>
-    <p class="mdesc" style="margin-bottom:14px">Colle simplement le lien : on récupère le nom, l'image et la catégorie. Tu n'as qu'à indiquer qui propose, la durée et l'effort.</p>
-    <div class="f-row"><label>Lien de l'activité</label><input id="pUrl" type="url" placeholder="Colle le lien ici…" autocomplete="off"><div class="url-status" id="pStatus"></div></div>
+    <p class="mdesc" style="margin-bottom:14px">Donne un <b>nom</b> et une <b>adresse</b> à l'activité (obligatoires). Le lien est optionnel, et la photo s'importe depuis ton appareil.</p>
+    <div class="f-row"><label>Lien de l'activité (optionnel)</label><input id="pUrl" type="url" placeholder="Colle le lien ici…" autocomplete="off"><div class="url-status" id="pStatus"></div></div>
     <div id="pPreview" class="prop-preview">
       <div class="pp-thumb" id="ppThumb"></div>
-      <div style="flex:1;min-width:0"><label style="margin-bottom:4px">Nom (modifiable)</label><input id="pName" type="text" placeholder="Nom de l'activité"></div>
+      <div style="flex:1;min-width:0"><label style="margin-bottom:4px">Nom (obligatoire)</label><input id="pName" type="text" placeholder="Nom de l'activité" required></div>
     </div>
-    <div class="f-row"><label>Image</label>
-      <div style="display:flex;gap:8px">
-        <input id="pImg" type="text" placeholder="Colle une URL d'image…" autocomplete="off" style="flex:1">
-        <input type="file" accept="image/*" id="pFile" style="display:none">
-        <button type="button" class="btn-ghost" id="pFileBtn">📁 Importer</button>
-      </div>
-      <div class="url-status">Importe une photo depuis ton appareil, ou colle l'adresse d'une image en ligne.</div>
+    <div class="f-row"><label>Photo (optionnel)</label>
+      <input type="hidden" id="pImg">
+      <input type="file" accept="image/*" id="pFile" style="display:none">
+      <button type="button" class="btn-ghost" id="pFileBtn">📁 Importer une photo</button>
+      <div class="url-status">Depuis ton téléphone ou ton ordinateur.</div>
     </div>
     <div class="f-row"><label>Proposée par</label><select id="pBy">${people}</select></div>
     <div class="f-row two">
@@ -1580,7 +1587,7 @@ function openPropose(){
       <div><label>Effort</label><select id="pEffort"><option>Facile</option><option selected>Modéré</option><option>Soutenu</option></select></div>
     </div>
     <div class="f-row"><label>Jour (optionnel)</label><select id="pDay">${days}</select></div>
-    <div class="f-row"><label>Adresse (optionnel)</label><input id="pAddress" type="text" placeholder="Ex. 123 rue Principale, ville" autocomplete="off"></div>
+    <div class="f-row"><label>Adresse (obligatoire)</label><input id="pAddress" type="text" placeholder="Ex. 123 rue Principale, ville" autocomplete="off" required></div>
     <details class="adv"><summary>Ajuster les détails (catégorie, budget, description)</summary>
       <div class="f-row two" style="margin-top:12px">
         <div><label>Catégorie</label><select id="pCat">${cats}</select></div>
@@ -1598,19 +1605,15 @@ function openPropose(){
     const u=urlEl.value.trim(); if(!u) return;
     const g=guessFromUrl(u);
     if(g.cat) $('#pCat').value=g.cat;
-    if(g.title && !$('#pName').value) $('#pName').value=g.title;
-    $('#pPreview').style.display='flex';
-    setThumb(g.cat);
-    $('#pStatus').textContent='🔎 Récupération des infos…';
+    setThumb($('#pCat').value, $('#pImg').value.trim());
+    $('#pStatus').textContent='🔎 Lecture du lien…';
     const m=await fetchMeta(u);
     if(m){
-      if(m.title) $('#pName').value=(m.title||'').slice(0,90);
       if(m.desc && !$('#pDesc').value) $('#pDesc').value=m.desc.slice(0,220);
       if(m.price) $('#pBudget').value=m.price;
-      if(m.img){ $('#pImg').value=m.img; setThumb(g.cat, m.img); }
-      $('#pStatus').textContent='✓ Infos récupérées — vérifie le nom et complète durée / effort.';
+      $('#pStatus').textContent='Lien ajouté. N\'oublie pas le nom et l\'adresse.';
     } else {
-      $('#pStatus').textContent='Aperçu auto indisponible (site protégé) — saisis le nom à la main.';
+      $('#pStatus').textContent='';
     }
   };
   function setThumb(cat,img){
@@ -1620,7 +1623,6 @@ function openPropose(){
   }
   urlEl.addEventListener('change',detect); urlEl.addEventListener('blur',detect);
   urlEl.addEventListener('paste',()=>setTimeout(detect,50));
-  $('#pImg').addEventListener('input',()=>setThumb($('#pCat').value, $('#pImg').value.trim()));
   $('#pCat').addEventListener('change',()=>setThumb($('#pCat').value, $('#pImg').value.trim()));
   $('#pFileBtn').addEventListener('click',()=>$('#pFile').click());
   $('#pFile').addEventListener('change',ev=>{ const f=ev.target.files&&ev.target.files[0]; importImage(f,d=>{ if(d){ $('#pImg').value=d; setThumb($('#pCat').value,d); $('#pStatus').textContent='✓ Image importée.'; } else $('#pStatus').textContent='Format d\'image non reconnu.'; }); });
@@ -1629,9 +1631,10 @@ function openPropose(){
 }
 function submitPropose(){
   const url=$('#pUrl').value.trim();
-  let name=$('#pName')?$('#pName').value.trim():'';
-  if(!name && !url){ $('#pStatus').textContent='Colle au moins un lien.'; return; }
-  if(!name) name=guessFromUrl(url).title||'Activité proposée';
+  const name=$('#pName')?$('#pName').value.trim():'';
+  const address=($('#pAddress')&&$('#pAddress').value.trim())||'';
+  if(!name){ $('#pStatus').textContent='⚠️ Donne un nom à l\'activité.'; if($('#pName'))$('#pName').focus(); return; }
+  if(!address){ $('#pStatus').textContent='⚠️ Indique une adresse (obligatoire).'; if($('#pAddress'))$('#pAddress').focus(); return; }
   const cat=$('#pCat').value;
   const dayV=$('#pDay').value;
   const by=$('#pBy').value||state.currentUser||null;
@@ -1648,7 +1651,7 @@ function submitPropose(){
     desc:$('#pDesc').value.trim()||('Proposition ajoutée par '+(personById(by)?personById(by).name:'un membre du groupe')+'.'),
     url,
     proposedBy: by,
-    address:($('#pAddress')&&$('#pAddress').value.trim())||''
+    address
   };
   state.proposed.push(a); ensureVotes(a.id);
   if(by) state.votes[a.id].love.push(by);
